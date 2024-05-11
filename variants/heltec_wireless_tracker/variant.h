@@ -66,3 +66,16 @@
 
 #define SX126X_DIO2_AS_RF_SWITCH
 #define SX126X_DIO3_TCXO_VOLTAGE 1.8
+
+#ifndef HAS_SDCARD
+#define HAS_SDCARD
+
+#define RECORD_GPS
+#define SDCARD_USE_SPI1
+
+#define SPI_MISO 4
+#define SPI_MOSI 5
+#define SPI_SCK 6
+#define SDCARD_CS 7
+
+#endif

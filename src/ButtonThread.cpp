@@ -21,6 +21,11 @@
 #define LOG_BUTTON(...)
 #endif
 
+#if defined(RECORD_GPS)
+#include "modules/SDRecordModule.h"
+extern SDRecordModule *sdRecordModule;
+#endif
+
 using namespace concurrency;
 
 ButtonThread *buttonThread; // Declared extern in header
@@ -188,6 +193,11 @@ int32_t ButtonThread::runOnce()
         case BUTTON_EVENT_LONG_RELEASED: {
             LOG_INFO("Shutdown from long press\n");
             playShutdownMelody();
+#if defined(RECORD_GPS)
+            if (sdRecordModule) {
+                sdRecordModule->shutdown();
+            }
+#endif
             delay(3000);
             power->shutdown();
             break;

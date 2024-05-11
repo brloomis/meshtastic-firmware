@@ -38,6 +38,11 @@ uint8_t uBloxProtocolVersion;
 #define GPS_SOL_EXPIRY_MS 5000 // in millis. give 1 second time to combine different sentences. NMEA Frequency isn't higher anyway
 #define NMEA_MSG_GXGSA "GNGSA" // GSA message (GPGSA, GNGSA etc)
 
+#if defined(RECORD_GPS)
+#include "modules/SDRecordModule.h"
+extern SDRecordModule *sdRecordModule;
+#endif
+
 void GPS::UBXChecksum(uint8_t *message, size_t length)
 {
     uint8_t CK_A = 0, CK_B = 0;
@@ -942,6 +947,15 @@ void GPS::publishUpdate()
         newStatus.notifyObservers(&status);
         if (config.position.gps_mode == meshtastic_Config_PositionConfig_GpsMode_ENABLED) {
             positionModule->handleNewPosition();
+
+#if defined(RECORD_GPS)
+            if (sdRecordModule) {
+                // LOG_DEBUG("***BRL GPS::publishUpdate calling sdRecordModule->writePos()\n");
+                sdRecordModule->writePos(p.latitude_i, p.longitude_i, p.altitude, p.sats_in_view);
+            } else {
+                // LOG_DEBUG("***BRL GPS::publishUpdate sdRecordModule is false!\n");
+            }
+#endif
         }
     }
 }
