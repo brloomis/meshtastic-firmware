@@ -171,6 +171,13 @@ int32_t ButtonThread::runOnce()
                 digitalWrite(PIN_EINK_EN, digitalRead(PIN_EINK_EN) == LOW);
                 break;
 #endif
+#if defined(RECORD_GPS)
+            case 5:
+                if (sdRecordModule) {
+                    sdRecordModule->shutdown();
+                }
+                break;
+#endif
             // No valid multipress action
             default:
                 break;
