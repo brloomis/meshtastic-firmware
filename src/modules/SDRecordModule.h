@@ -28,7 +28,7 @@ class SDRecordModule : private concurrency::OSThread
 
     void shutdown();
 
-    int32_t writePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats);
+    int32_t tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats);
 
     void drawFrameRecorder(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t y);
 
@@ -39,6 +39,9 @@ class SDRecordModule : private concurrency::OSThread
   private:
     bool openTrackFile(const String prefix);
     String genFileName(const String prefix, uint8_t num, const String suffix);
+    int32_t writePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats, time_t timestamp);
+
+    bool writeFooter();
 
     File m_fp;
     bool m_fp_open;
@@ -48,9 +51,10 @@ class SDRecordModule : private concurrency::OSThread
     int m_lastLat;
     int m_lastLon;
     int m_lastAlt;
-    uint32_t m_lastTime;
+    time_t m_lastTime;
     uint32_t m_pointsRecorded;
     String m_fileName;
+    String m_dbgdata;
 };
 
 extern SDRecordModule *sdRecordModule;

@@ -951,7 +951,7 @@ void GPS::publishUpdate()
 #if defined(RECORD_GPS)
             if (sdRecordModule) {
                 // LOG_DEBUG("***BRL GPS::publishUpdate calling sdRecordModule->writePos()\n");
-                sdRecordModule->writePos(p.latitude_i, p.longitude_i, p.altitude, p.sats_in_view);
+                sdRecordModule->tryWritePos(p.latitude_i, p.longitude_i, p.altitude_hae, p.sats_in_view);
             } else {
                 // LOG_DEBUG("***BRL GPS::publishUpdate sdRecordModule is false!\n");
             }
