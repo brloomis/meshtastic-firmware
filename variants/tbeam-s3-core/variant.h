@@ -67,3 +67,5 @@
 #define HAS_32768HZ
 
 #define USE_SH1106
+
+#define RECORD_GPS
