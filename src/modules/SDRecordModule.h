@@ -26,6 +26,7 @@ class SDRecordModule : private concurrency::OSThread
 
     int handleStatusUpdate(const meshtastic::GPSStatus *newStatus);
 
+    void toggleRec();
     void shutdown();
 
     int32_t tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats);
@@ -37,7 +38,8 @@ class SDRecordModule : private concurrency::OSThread
     virtual int32_t runOnce() override;
 
   private:
-    bool openTrackFile(const String prefix);
+    bool openTrackFileByTime(time_t curtime);
+    bool openTrackFileByPrefix(const String prefix);
     String genFileName(const String prefix, uint8_t num, const String suffix);
     int32_t writePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats, time_t timestamp);
 
@@ -55,6 +57,7 @@ class SDRecordModule : private concurrency::OSThread
     uint32_t m_pointsRecorded;
     String m_fileName;
     String m_dbgdata;
+    bool m_wantRecord;
 };
 
 extern SDRecordModule *sdRecordModule;

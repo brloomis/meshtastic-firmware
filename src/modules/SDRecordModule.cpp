@@ -31,7 +31,7 @@ SDRecordModule *sdRecordModule;
 
 SDRecordModule::SDRecordModule()
     : concurrency::OSThread("SDRecordModule"), m_fp(), m_fp_open(false), m_noCard(false), m_cantWrite(false), m_lastLat(0),
-      m_lastLon(0), m_lastAlt(0), m_lastTime(0), m_pointsRecorded(0), m_dbgdata()
+      m_lastLon(0), m_lastAlt(0), m_lastTime(0), m_pointsRecorded(0), m_dbgdata(), m_wantRecord(true)
 
 {
     LOG_DEBUG("SDRecord is UP\n");
@@ -62,7 +62,39 @@ String SDRecordModule::genFileName(const String prefix, uint8_t num, const Strin
     return output;
 }
 
-bool SDRecordModule::openTrackFile(const String prefix)
+bool SDRecordModule::openTrackFileByTime(time_t curtime)
+{
+    struct tm *t = NULL;
+    char timebuf[20] = {0};
+
+    if (0L >= curtime) {
+        LOG_ERROR("SDRecord- ts_unix invalid: 0x%08X\n", curtime);
+        m_dbgdata = String("curtime zero");
+        return false;
+    }
+    t = gmtime(&curtime);
+    if (!t) {
+        LOG_ERROR("SDRecord- gmtime failed\n");
+        return false;
+    }
+
+    // TODO hardcoded constant
+    if (120 >= t->tm_year) {
+        LOG_ERROR("SDRecord- gmtime year is bad: %d\n", t->tm_year);
+        return false;
+    }
+
+    size_t sfret = strftime(timebuf, sizeof(timebuf), "%Y%m%d_", t);
+    if (0 == sfret || sizeof(timebuf) <= sfret) {
+        LOG_ERROR("SDRecord- strftime failed: %lu\n", sfret);
+        return false;
+    }
+
+    LOG_DEBUG("SDRecord- Got timestamp prefix: %s\n", timebuf);
+    return openTrackFileByPrefix(timebuf);
+}
+
+bool SDRecordModule::openTrackFileByPrefix(const String prefix)
 {
     LOG_ERROR("SDRecord- cardSize = %llu\n", SD.cardSize());
     LOG_ERROR("SDRecord- cardType = %d\n", SD.cardType());
@@ -155,13 +187,16 @@ int32_t SDRecordModule::runOnce()
 
 int32_t SDRecordModule::tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats)
 {
+
+    // LOG_DEBUG("SDRecord- ****** %s\n", __FUNCTION__);
+
     if (m_cantWrite || m_noCard) {
         // LOG_DEBUG("SDRecord- Dropping writePos, m_cantWrite = %d, m_noCard = %d\n", m_cantWrite, m_noCard);
         return 0;
     }
     uint32_t rtc_time = getValidTime(RTCQualityGPS);
 
-    LOG_DEBUG("SDRecord writePos got lat: %d, lon: %d, alt: %d, numsats: %u\n", myLat, myLon, myAlt, numSats);
+    LOG_DEBUG("SDRecord tryWritePos got lat: %d, lon: %d, alt: %d, numsats: %u\n", myLat, myLon, myAlt, numSats);
 
     LOG_DEBUG("SDRecord time: %lu\n", rtc_time);
     if (0 == myLat || (0 == myLon) || (0 == numSats)) {
@@ -255,6 +290,17 @@ int32_t SDRecordModule::writePos(int32_t myLat, int32_t myLon, int32_t myAlt, ui
 
     return 0;
 }
+void SDRecordModule::toggleRec()
+{
+    LOG_ERROR("SDRecord- m_wantRecord was: %d\n", m_wantRecord);
+    if (m_wantRecord) {
+        m_wantRecord = false;
+        shutdown();
+    } else {
+        m_wantRecord = true;
+    }
+    LOG_ERROR("SDRecord- m_wantRecord now: %d\n", m_wantRecord);
+}
 
 void SDRecordModule::shutdown()
 {
@@ -272,55 +318,55 @@ void SDRecordModule::shutdown()
         LOG_DEBUG("SDRecord- wanted to shut down but not running\n");
     }
 }
+
 int SDRecordModule::handleStatusUpdate(const meshtastic::GPSStatus *newStatus)
 {
+    // LOG_DEBUG("SDRecord- ****** %s\n", __FUNCTION__);
+
     if (m_cantWrite || m_noCard) {
         // LOG_DEBUG("SDRecord- Dropping handleStatusUpdate, m_cantWrite = %d, m_noCard = %d\n", m_cantWrite, m_noCard);
 
         return 0;
     }
+    if (!m_wantRecord) {
+        LOG_DEBUG("SDRecord- disabled\n");
+        return 0;
+    }
 
     uint32_t rtc_time = getValidTime(RTCQualityGPS);
-    char dbgtime[40] = {0};
 
     LOG_DEBUG("SDRecord got status update %p\n", newStatus);
     if (newStatus->getHasLock()) {
         // load data from GPS object, will add timestamp + battery further down
         LOG_DEBUG("SDRecord- We have lock! rtc_time is 0x%08X\n", rtc_time);
         if (0 != rtc_time) {
-            struct tm *t = NULL;
-            time_t ts_unix = static_cast<time_t>(rtc_time);
-            if (0L >= ts_unix) {
-                LOG_ERROR("SDRecord- ts_unix invalid: %ld / 0x%08X\n", ts_unix, ts_unix);
-                return 0;
-            }
-            t = gmtime(&ts_unix);
-            if (!t) {
-                LOG_ERROR("SDRecord- could not make time");
-                m_dbgdata = String("time err");
-                return 0;
-            }
-            // TODO const
-            if (120 >= t->tm_year) {
-                LOG_ERROR("SDRecord- gmtime year is bad: %d\n", t->tm_year);
-                snprintf(dbgtime, sizeof(dbgtime), "bad year %d", t->tm_year);
-                m_dbgdata = dbgtime;
-                return -1;
-            }
-
             if (!m_fp_open) {
-                char timebuf[20] = {0};
+                bool ret = this->openTrackFileByTime(static_cast<time_t>(rtc_time));
+                if (false == ret) {
+                    LOG_ERROR("SDRecord- openTrackFileByTime returned false\n");
+                }
 
-                LOG_DEBUG("SDRecord- Have time, but m_fp is closed, opening that...\n");
-                strftime(timebuf, sizeof(timebuf), "%Y%m%d_", t);
-
-                LOG_DEBUG("SDRecord- Got timestamp prefix: %s\n", timebuf);
-                openTrackFile(timebuf);
             } else {
-                dbgtime[0] = '2';
-                LOG_DEBUG("SDRecord- fp was already open\n");
+                // dbgtime[0] = '2';
+                // LOG_DEBUG("SDRecord- fp was already open\n");
             }
-            LOG_DEBUG("SDRecord- should have written the pos now\n");
+            if (m_fp_open) {
+                int32_t myLat = newStatus->getLatitude();
+                int32_t myLon = newStatus->getLongitude();
+                int32_t myAlt = newStatus->getAltitude();
+                uint32_t numSats = newStatus->getNumSatellites();
+
+                /*
+                    LOG_DEBUG("SDRecord *** update, fp is open,  got lat: %d, lon: %d, alt: %d, numsats: %u\n", myLat, myLon,
+                    myAlt, numSats);
+                */
+                // write pos here
+                int32_t writeret = this->tryWritePos(myLat, myLon, myAlt, numSats);
+                LOG_DEBUG("SDRecord- tryWritePos ret %d\n", writeret);
+            } else {
+                LOG_DEBUG("SDRecord- fp didn't open, not writing pos\n");
+            }
+
         } else {
             LOG_DEBUG("SDRecord- No lock :(\n");
         }
@@ -355,8 +401,14 @@ void SDRecordModule::drawFrameRecorder(OLEDDisplay *display, OLEDDisplayUiState 
         display->drawString(x + header_offset, y, points);
 
     } else {
-        display->drawString(x, y, String("SD Idle "));
-        header_offset = display->getStringWidth("SD Idle ");
+        if (!m_wantRecord) {
+            display->drawString(x, y, String("SD Off "));
+            header_offset = display->getStringWidth("SD Off ");
+
+        } else {
+            display->drawString(x, y, String("SD Idle "));
+            header_offset = display->getStringWidth("SD Idle ");
+        }
     }
     if (m_noCard) {
         display->drawString(x + header_offset, y, String("No Card"));

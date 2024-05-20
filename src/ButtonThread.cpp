@@ -174,7 +174,7 @@ int32_t ButtonThread::runOnce()
 #if defined(RECORD_GPS)
             case 5:
                 if (sdRecordModule) {
-                    sdRecordModule->shutdown();
+                    sdRecordModule->toggleRec();
                 }
                 break;
 #endif
