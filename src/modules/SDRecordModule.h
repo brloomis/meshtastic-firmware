@@ -1,3 +1,5 @@
+#include "configuration.h"
+
 #pragma once
 #include "FSCommon.h"
 #include "GPSStatus.h"
@@ -5,11 +7,13 @@
 #include "OLEDDisplayUi.h"
 #include "ProtobufModule.h"
 #include "concurrency/OSThread.h"
+#include <OLEDDisplay.h>
+#include <OLEDDisplayUi.h>
 
 /**
  * Module to record data to an SD card
  */
-class SDRecordModule : private concurrency::OSThread
+class SDRecordModule : private concurrency::OSThread, public MeshModule
 {
     CallbackObserver<SDRecordModule, const meshtastic::GPSStatus *> gpsStatusObserver =
         CallbackObserver<SDRecordModule, const meshtastic::GPSStatus *>(this, &SDRecordModule::handleStatusUpdate);
@@ -31,7 +35,14 @@ class SDRecordModule : private concurrency::OSThread
 
     int32_t tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats);
 
-    void drawFrameRecorder(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t y);
+#if HAS_SCREEN
+
+    virtual bool wantUIFrame() { return true; }
+
+    virtual void drawFrame(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t y) override;
+#endif
+
+    virtual bool wantPacket(const meshtastic_MeshPacket *p) { return false; }
 
   protected:
     /** Does our periodic broadcast */

@@ -59,11 +59,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "platform/portduino/PortduinoGlue.h"
 #endif
 
-#if defined(RECORD_GPS)
-#include "modules/SDRecordModule.h"
-extern SDRecordModule *sdRecordModule;
-#endif
-
 using namespace meshtastic; /** @todo remove */
 
 namespace graphics
@@ -1367,15 +1362,6 @@ void Screen::drawDebugInfoWiFiTrampoline(OLEDDisplay *display, OLEDDisplayUiStat
     screen2->debugInfo.drawFrameWiFi(display, state, x, y);
 }
 
-#if defined(RECORD_GPS)
-void Screen::drawGpsRecordInfoTrampoline(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t y)
-{
-    if (nullptr != sdRecordModule) {
-        sdRecordModule->drawFrameRecorder(display, state, x, y);
-    }
-}
-#endif
-
 /* show a message that the SSL cert is being built
  * it is expected that this will be used during the boot phase */
 void Screen::setSSLFrames()
@@ -1521,10 +1507,6 @@ void Screen::setFrames()
         // call a method on debugInfoScreen object (for more details)
         normalFrames[numframes++] = &Screen::drawDebugInfoWiFiTrampoline;
     }
-#endif
-
-#if defined(RECORD_GPS)
-    normalFrames[numframes++] = &Screen::drawGpsRecordInfoTrampoline;
 #endif
 
     LOG_DEBUG("Finished building frames. numframes: %d\n", numframes);

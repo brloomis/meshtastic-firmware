@@ -30,8 +30,9 @@ const char *GPX_FOOTER = "</trkseg></trk></gpx>\n";
 SDRecordModule *sdRecordModule;
 
 SDRecordModule::SDRecordModule()
-    : concurrency::OSThread("SDRecordModule"), m_fp(), m_fp_open(false), m_noCard(false), m_cantWrite(false), m_lastLat(0),
-      m_lastLon(0), m_lastAlt(0), m_lastTime(0), m_pointsRecorded(0), m_dbgdata(), m_wantRecord(true)
+    : concurrency::OSThread("SDRecordModule"), MeshModule("SDRecorder"), m_fp(), m_fp_open(false), m_noCard(false),
+      m_cantWrite(false), m_lastLat(0), m_lastLon(0), m_lastAlt(0), m_lastTime(0), m_pointsRecorded(0), m_dbgdata(),
+      m_wantRecord(true)
 
 {
     LOG_DEBUG("SDRecord is UP\n");
@@ -376,7 +377,7 @@ int SDRecordModule::handleStatusUpdate(const meshtastic::GPSStatus *newStatus)
     return 0;
 }
 
-void SDRecordModule::drawFrameRecorder(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t y)
+void SDRecordModule::drawFrame(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t y)
 {
     String fileprefix("F: ");
     char points[20] = {0};
