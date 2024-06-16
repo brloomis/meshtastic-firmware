@@ -70,8 +70,13 @@
 #include "modules/SerialModule.h"
 #endif
 #endif
+
 #if defined(HAS_SDCARD) && defined(RECORD_GPS)
 #include "modules/SDRecordModule.h"
+#endif
+
+#if !MESHTASTIC_EXCLUDE_DROPZONE
+#include "modules/DropzoneModule.h"
 #endif
 
 /**
@@ -103,6 +108,10 @@ void setupModules()
 #endif
 #if !MESHTASTIC_EXCLUDE_ATAK
         atakPluginModule = new AtakPluginModule();
+#endif
+
+#if !MESHTASTIC_EXCLUDE_DROPZONE
+        dropzoneModule = new DropzoneModule();
 #endif
         // Note: if the rest of meshtastic doesn't need to explicitly use your module, you do not need to assign the instance
         // to a global variable.
