@@ -197,9 +197,9 @@ int32_t SDRecordModule::tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt,
     }
     uint32_t rtc_time = getValidTime(RTCQualityGPS);
 
-    LOG_DEBUG("SDRecord tryWritePos got lat: %d, lon: %d, alt: %d, numsats: %u\n", myLat, myLon, myAlt, numSats);
+    // LOG_DEBUG("SDRecord tryWritePos got lat: %d, lon: %d, alt: %d, numsats: %u\n", myLat, myLon, myAlt, numSats);
 
-    LOG_DEBUG("SDRecord time: %lu\n", rtc_time);
+    // LOG_DEBUG("SDRecord time: %lu\n", rtc_time);
     if (0 == myLat || (0 == myLon) || (0 == numSats)) {
         LOG_ERROR("SDRecord- tryWritePos was called but lat=%d, lon=%d, numSats=%lu\n", myLat, myLon, numSats);
         return -1;
@@ -213,8 +213,10 @@ int32_t SDRecordModule::tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt,
             if ((myLat == m_lastLat) && (myLon == m_lastLon) && (myAlt == m_lastAlt)) {
                 LOG_DEBUG("SDRecord- Have not moved since last write\n");
             } else {
+                /*
                 LOG_DEBUG("SDRecord- Diff: lat=%d, lon=%d, alt=%d\n", abs(myLat - m_lastLat), abs(myLon - m_lastLon),
                           abs(myAlt - m_lastAlt));
+                */
             }
 
             return this->writePos(myLat, myLon, myAlt, numSats, static_cast<time_t>(rtc_time));
@@ -278,7 +280,7 @@ int32_t SDRecordModule::writePos(int32_t myLat, int32_t myLon, int32_t myAlt, ui
         memset(buf, 0x0, sizeof(buf));
 
         m_fp.flush();
-        LOG_DEBUG("SDRecord- Data was written!\n");
+        // LOG_DEBUG("SDRecord- Data was written!\n");
         m_pointsRecorded++;
         m_lastLat = myLat;
         m_lastLon = myLon;
@@ -336,10 +338,10 @@ int SDRecordModule::handleStatusUpdate(const meshtastic::GPSStatus *newStatus)
 
     uint32_t rtc_time = getValidTime(RTCQualityGPS);
 
-    LOG_DEBUG("SDRecord got status update %p\n", newStatus);
+    // LOG_DEBUG("SDRecord got status update %p\n", newStatus);
     if (newStatus->getHasLock()) {
         // load data from GPS object, will add timestamp + battery further down
-        LOG_DEBUG("SDRecord- We have lock! rtc_time is 0x%08X\n", rtc_time);
+        // LOG_DEBUG("SDRecord- We have lock! rtc_time is 0x%08X\n", rtc_time);
         if (0 != rtc_time) {
             if (!m_fp_open) {
                 bool ret = this->openTrackFileByTime(static_cast<time_t>(rtc_time));
@@ -363,7 +365,9 @@ int SDRecordModule::handleStatusUpdate(const meshtastic::GPSStatus *newStatus)
                 */
                 // write pos here
                 int32_t writeret = this->tryWritePos(myLat, myLon, myAlt, numSats);
-                LOG_DEBUG("SDRecord- tryWritePos ret %d\n", writeret);
+                if (0 != writeret) {
+                    LOG_ERROR("SDRecord- tryWritePos ret %d\n", writeret);
+                }
             } else {
                 LOG_DEBUG("SDRecord- fp didn't open, not writing pos\n");
             }
