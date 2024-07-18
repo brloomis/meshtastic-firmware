@@ -25,13 +25,9 @@ pio run --environment $1 # -v
 SRCELF=.pio/build/$1/firmware.elf
 cp $SRCELF $OUTDIR/$basename.elf
 
-if (echo $1 | grep -q "wio-sdk-wm1110"); then
-	echo "Skipping dfu file"
-else
-	echo "Generating NRF52 dfu file"
-	DFUPKG=.pio/build/$1/firmware.zip
-	cp $DFUPKG $OUTDIR/$basename-ota.zip
-fi
+echo "Generating NRF52 dfu file"
+DFUPKG=.pio/build/$1/firmware.zip
+cp $DFUPKG $OUTDIR/$basename-ota.zip
 
 echo "Generating NRF52 uf2 file"
 SRCHEX=.pio/build/$1/firmware.hex
@@ -39,7 +35,6 @@ SRCHEX=.pio/build/$1/firmware.hex
 # if WM1110 target, merge hex with softdevice 7.3.0
 if (echo $1 | grep -q "wio-sdk-wm1110"); then
 	echo "Merging with softdevice"
-	sudo chmod +x ./bin/mergehex
 	bin/mergehex -m bin/s140_nrf52_7.3.0_softdevice.hex $SRCHEX -o .pio/build/$1/$basename.hex
 	SRCHEX=.pio/build/$1/$basename.hex
 	bin/uf2conv.py $SRCHEX -c -o $OUTDIR/$basename.uf2 -f 0xADA52840
