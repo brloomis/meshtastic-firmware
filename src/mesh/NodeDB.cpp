@@ -292,10 +292,10 @@ void NodeDB::installDefaultConfig()
     config.lora.ignore_mqtt = false;
 #endif
 #ifdef ADMIN_KEY_USERPREFS
-    memcpy(config.security.admin_key.bytes, admin_key_userprefs, 32);
-    config.security.admin_key.size = 32;
+    memcpy(config.security.admin_key[0].bytes, admin_key_userprefs, 32);
+    config.security.admin_key[0].size = 32;
 #else
-    config.security.admin_key.size = 0;
+    config.security.admin_key[0].size = 0;
 #endif
     config.security.public_key.size = 0;
     config.security.private_key.size = 0;
@@ -395,6 +395,12 @@ void NodeDB::installDefaultModuleConfig()
     moduleConfig.has_store_forward = true;
     moduleConfig.has_telemetry = true;
     moduleConfig.has_external_notification = true;
+#if defined(PIN_BUZZER)
+    moduleConfig.external_notification.enabled = true;
+    moduleConfig.external_notification.output_buzzer = PIN_BUZZER;
+    moduleConfig.external_notification.alert_message_buzzer = true;
+    moduleConfig.external_notification.nag_timeout = 60;
+#endif
 #if defined(RAK4630) || defined(RAK11310)
     // Default to RAK led pin 2 (blue)
     moduleConfig.external_notification.enabled = true;
@@ -620,7 +626,7 @@ void NodeDB::pickNewNodeNum()
 
     meshtastic_NodeInfoLite *found;
     while ((nodeNum == NODENUM_BROADCAST || nodeNum < NUM_RESERVED) ||
-           ((found = getMeshNode(nodeNum)) && memcmp(found->user.macaddr, owner.macaddr, sizeof(owner.macaddr)) != 0)) {
+           ((found = getMeshNode(nodeNum)) && memcmp(found->user.macaddr, ourMacAddr, sizeof(ourMacAddr)) != 0)) {
         NodeNum candidate = random(NUM_RESERVED, LONG_MAX); // try a new random choice
         LOG_WARN("NOTE! Our desired nodenum 0x%x is invalid or in use, so trying for 0x%x\n", nodeNum, candidate);
         nodeNum = candidate;
