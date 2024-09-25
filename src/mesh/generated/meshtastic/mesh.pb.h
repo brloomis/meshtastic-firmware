@@ -71,6 +71,8 @@ typedef enum _meshtastic_HardwareModel {
     meshtastic_HardwareModel_RAK2560 = 22,
     /* Heltec HRU-3601: https://heltec.org/project/hru-3601/ */
     meshtastic_HardwareModel_HELTEC_HRU_3601 = 23,
+    /* Heltec Wireless Bridge */
+    meshtastic_HardwareModel_HELTEC_WIRELESS_BRIDGE = 24,
     /* B&Q Consulting Station Edition G1: https://uniteng.com/wiki/doku.php?id=meshtastic:station */
     meshtastic_HardwareModel_STATION_G1 = 25,
     /* RAK11310 (RP2040 + SX1262) */
@@ -107,7 +109,7 @@ typedef enum _meshtastic_HardwareModel {
     meshtastic_HardwareModel_NRF52840_PCA10059 = 40,
     /* Custom Disaster Radio esp32 v3 device https://github.com/sudomesh/disaster-radio/tree/master/hardware/board_esp32_v3 */
     meshtastic_HardwareModel_DR_DEV = 41,
-    /* M5 esp32 based MCU modules with enclosure, TFT and LORA Shields. All Variants (Basic, Core, Fire, Core2, Paper) https://m5stack.com/ */
+    /* M5 esp32 based MCU modules with enclosure, TFT and LORA Shields. All Variants (Basic, Core, Fire, Core2, CoreS3, Paper) https://m5stack.com/ */
     meshtastic_HardwareModel_M5STACK = 42,
     /* New Heltec LoRA32 with ESP32-S3 CPU */
     meshtastic_HardwareModel_HELTEC_V3 = 43,
@@ -196,9 +198,13 @@ typedef enum _meshtastic_HardwareModel {
  https://www.adafruit.com/product/938
   ^^^ short A0 to switch to I2C address 0x3C */
     meshtastic_HardwareModel_RP2040_FEATHER_RFM95 = 76,
-    /* M5 esp32 based MCU modules with enclosure, TFT and LORA Shields. All Variants (Basic, Core, Fire, Core2, Paper) https://m5stack.com/ */
+    /* M5 esp32 based MCU modules with enclosure, TFT and LORA Shields. All Variants (Basic, Core, Fire, Core2, CoreS3, Paper) https://m5stack.com/ */
     meshtastic_HardwareModel_M5STACK_COREBASIC = 77,
     meshtastic_HardwareModel_M5STACK_CORE2 = 78,
+    /* Pico2 with Waveshare Hat, same as Pico */
+    meshtastic_HardwareModel_RPI_PICO2 = 79,
+    /* M5 esp32 based MCU modules with enclosure, TFT and LORA Shields. All Variants (Basic, Core, Fire, Core2, CoreS3, Paper) https://m5stack.com/ */
+    meshtastic_HardwareModel_M5STACK_CORES3 = 80,
     /* ------------------------------------------------------------------------------------------------------------------------------------------
  Reserved ID For developing private Ports. These will show up in live traffic sparsely, so we can use a high number. Keep it within 8 bits.
  ------------------------------------------------------------------------------------------------------------------------------------------ */
@@ -876,6 +882,8 @@ typedef struct _meshtastic_DeviceMetadata {
     meshtastic_HardwareModel hw_model;
     /* Has Remote Hardware enabled */
     bool hasRemoteHardware;
+    /* Has PKC capabilities */
+    bool hasPKC;
 } meshtastic_DeviceMetadata;
 
 /* Packets from the radio to the phone will appear on the fromRadio characteristic.
@@ -1105,7 +1113,7 @@ extern "C" {
 #define meshtastic_Compressed_init_default       {_meshtastic_PortNum_MIN, {0, {0}}}
 #define meshtastic_NeighborInfo_init_default     {0, 0, 0, 0, {meshtastic_Neighbor_init_default, meshtastic_Neighbor_init_default, meshtastic_Neighbor_init_default, meshtastic_Neighbor_init_default, meshtastic_Neighbor_init_default, meshtastic_Neighbor_init_default, meshtastic_Neighbor_init_default, meshtastic_Neighbor_init_default, meshtastic_Neighbor_init_default, meshtastic_Neighbor_init_default}}
 #define meshtastic_Neighbor_init_default         {0, 0, 0, 0}
-#define meshtastic_DeviceMetadata_init_default   {"", 0, 0, 0, 0, 0, _meshtastic_Config_DeviceConfig_Role_MIN, 0, _meshtastic_HardwareModel_MIN, 0}
+#define meshtastic_DeviceMetadata_init_default   {"", 0, 0, 0, 0, 0, _meshtastic_Config_DeviceConfig_Role_MIN, 0, _meshtastic_HardwareModel_MIN, 0, 0}
 #define meshtastic_Heartbeat_init_default        {0}
 #define meshtastic_NodeRemoteHardwarePin_init_default {0, false, meshtastic_RemoteHardwarePin_init_default}
 #define meshtastic_ChunkedPayload_init_default   {0, 0, 0, {0, {0}}}
@@ -1130,7 +1138,7 @@ extern "C" {
 #define meshtastic_Compressed_init_zero          {_meshtastic_PortNum_MIN, {0, {0}}}
 #define meshtastic_NeighborInfo_init_zero        {0, 0, 0, 0, {meshtastic_Neighbor_init_zero, meshtastic_Neighbor_init_zero, meshtastic_Neighbor_init_zero, meshtastic_Neighbor_init_zero, meshtastic_Neighbor_init_zero, meshtastic_Neighbor_init_zero, meshtastic_Neighbor_init_zero, meshtastic_Neighbor_init_zero, meshtastic_Neighbor_init_zero, meshtastic_Neighbor_init_zero}}
 #define meshtastic_Neighbor_init_zero            {0, 0, 0, 0}
-#define meshtastic_DeviceMetadata_init_zero      {"", 0, 0, 0, 0, 0, _meshtastic_Config_DeviceConfig_Role_MIN, 0, _meshtastic_HardwareModel_MIN, 0}
+#define meshtastic_DeviceMetadata_init_zero      {"", 0, 0, 0, 0, 0, _meshtastic_Config_DeviceConfig_Role_MIN, 0, _meshtastic_HardwareModel_MIN, 0, 0}
 #define meshtastic_Heartbeat_init_zero           {0}
 #define meshtastic_NodeRemoteHardwarePin_init_zero {0, false, meshtastic_RemoteHardwarePin_init_zero}
 #define meshtastic_ChunkedPayload_init_zero      {0, 0, 0, {0, {0}}}
@@ -1261,6 +1269,7 @@ extern "C" {
 #define meshtastic_DeviceMetadata_position_flags_tag 8
 #define meshtastic_DeviceMetadata_hw_model_tag   9
 #define meshtastic_DeviceMetadata_hasRemoteHardware_tag 10
+#define meshtastic_DeviceMetadata_hasPKC_tag     11
 #define meshtastic_FromRadio_id_tag              1
 #define meshtastic_FromRadio_packet_tag          2
 #define meshtastic_FromRadio_my_info_tag         3
@@ -1541,7 +1550,8 @@ X(a, STATIC,   SINGULAR, BOOL,     hasEthernet,       6) \
 X(a, STATIC,   SINGULAR, UENUM,    role,              7) \
 X(a, STATIC,   SINGULAR, UINT32,   position_flags,    8) \
 X(a, STATIC,   SINGULAR, UENUM,    hw_model,          9) \
-X(a, STATIC,   SINGULAR, BOOL,     hasRemoteHardware,  10)
+X(a, STATIC,   SINGULAR, BOOL,     hasRemoteHardware,  10) \
+X(a, STATIC,   SINGULAR, BOOL,     hasPKC,           11)
 #define meshtastic_DeviceMetadata_CALLBACK NULL
 #define meshtastic_DeviceMetadata_DEFAULT NULL
 
@@ -1640,7 +1650,7 @@ extern const pb_msgdesc_t meshtastic_ChunkedPayloadResponse_msg;
 #define meshtastic_ClientNotification_size       415
 #define meshtastic_Compressed_size               243
 #define meshtastic_Data_size                     273
-#define meshtastic_DeviceMetadata_size           46
+#define meshtastic_DeviceMetadata_size           48
 #define meshtastic_FileInfo_size                 236
 #define meshtastic_FromRadio_size                510
 #define meshtastic_Heartbeat_size                0
