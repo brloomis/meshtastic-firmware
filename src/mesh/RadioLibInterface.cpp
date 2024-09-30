@@ -129,6 +129,28 @@ bool RadioLibInterface::canSendImmediately()
         return true;
 }
 
+bool RadioLibInterface::receiveDetected(uint16_t irq, ulong syncWordHeaderValidFlag, ulong preambleDetectedFlag)
+{
+    bool detected = (irq & (syncWordHeaderValidFlag | preambleDetectedFlag));
+    // Handle false detections
+    if (detected) {
+        if (!activeReceiveStart) {
+            activeReceiveStart = millis();
+        } else if (!Throttle::isWithinTimespanMs(activeReceiveStart, 2 * preambleTimeMsec) && !(irq & syncWordHeaderValidFlag)) {
+            // The HEADER_VALID flag should be set by now if it was really a packet, so ignore PREAMBLE_DETECTED flag
+            activeReceiveStart = 0;
+            LOG_DEBUG("Ignore false preamble detection.\n");
+            return false;
+        } else if (!Throttle::isWithinTimespanMs(activeReceiveStart, maxPacketTimeMsec)) {
+            // We should have gotten an RX_DONE IRQ by now if it was really a packet, so ignore HEADER_VALID flag
+            activeReceiveStart = 0;
+            LOG_DEBUG("Ignore false header detection.\n");
+            return false;
+        }
+    }
+    return detected;
+}
+
 /// Send a packet (possibly by enquing in a private fifo).  This routine will
 /// later free() the packet to pool.  This routine is not allowed to stall because it is called from
 /// bluetooth comms code.  If the txmit queue is empty it might return an error
@@ -145,7 +167,7 @@ ErrorCode RadioLibInterface::send(meshtastic_MeshPacket *p)
         }
 
     } else {
-        LOG_WARN("send - lora tx disable because RegionCode_Unset\n");
+        LOG_WARN("send - lora tx disabled because RegionCode_Unset\n");
         packetPool.release(p);
         return ERRNO_DISABLED;
     }
@@ -356,6 +378,14 @@ void RadioLibInterface::handleReceiveInterrupt()
     size_t length = iface->getPacketLength();
 
     xmitMsec = getPacketTime(length);
+
+#ifndef DISABLE_WELCOME_UNSET
+    if (config.lora.region == meshtastic_Config_LoRaConfig_RegionCode_UNSET) {
+        LOG_WARN("recv - lora rx disabled because RegionCode_Unset\n");
+        airTime->logAirtime(RX_ALL_LOG, xmitMsec);
+        return;
+    }
+#endif
 
     int state = iface->readData(radiobuf, length);
     if (state != RADIOLIB_ERR_NONE) {
