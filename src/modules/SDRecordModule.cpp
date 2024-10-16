@@ -68,6 +68,12 @@ bool SDRecordModule::openTrackFileByTime(time_t curtime)
     struct tm *t = NULL;
     char timebuf[20] = {0};
 
+    if((nullptr != powerStatus) && (25 >= powerStatus->getBatteryChargePercent()))
+    {
+        m_dbgdata = String("low batt");
+        return false;
+    }
+
     if (0L >= curtime) {
         LOG_ERROR("SDRecord- ts_unix invalid: 0x%08X\n", curtime);
         m_dbgdata = String("curtime zero");
@@ -270,10 +276,17 @@ int32_t SDRecordModule::writePos(int32_t myLat, int32_t myLon, int32_t myAlt, ui
         m_fp.write(reinterpret_cast<uint8_t *>(buf), strlen(buf));
         memset(buf, 0x0, sizeof(buf));
 
-        snprintf(buf, sizeof(buf), "        <brl batMv=\"%d\" batPct=\"%hu\" numSats=\"%u\"> </brl>\n",
-                 powerStatus->getBatteryVoltageMv(), powerStatus->getBatteryChargePercent(), numSats);
-        m_fp.write(reinterpret_cast<uint8_t *>(buf), strlen(buf));
-        memset(buf, 0x0, sizeof(buf));
+        if(nullptr != powerStatus)
+        {
+            snprintf(buf, sizeof(buf), "        <brl batMv=\"%d\" batPct=\"%hu\" numSats=\"%u\"> </brl>\n",
+            powerStatus->getBatteryVoltageMv(), powerStatus->getBatteryChargePercent(), numSats);
+            m_fp.write(reinterpret_cast<uint8_t *>(buf), strlen(buf));
+            memset(buf, 0x0, sizeof(buf));
+        }
+        else
+        {
+            LOG_INFO("SDRecord- powerStatus was NULL\n");
+        }
 
         snprintf(buf, sizeof(buf), "    </extensions>\n</trkpt>\n");
         m_fp.write(reinterpret_cast<uint8_t *>(buf), strlen(buf));

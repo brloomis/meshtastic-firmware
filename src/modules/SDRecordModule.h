@@ -45,7 +45,6 @@ class SDRecordModule : private concurrency::OSThread, public MeshModule
     virtual bool wantPacket(const meshtastic_MeshPacket *p) { return false; }
 
   protected:
-    /** Does our periodic broadcast */
     virtual int32_t runOnce() override;
 
   private:
@@ -53,8 +52,6 @@ class SDRecordModule : private concurrency::OSThread, public MeshModule
     bool openTrackFileByPrefix(const String prefix);
     String genFileName(const String prefix, uint8_t num, const String suffix);
     int32_t writePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats, time_t timestamp);
-
-    bool writeFooter();
 
     File m_fp;
     bool m_fp_open;
