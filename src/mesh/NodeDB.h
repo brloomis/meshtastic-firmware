@@ -29,6 +29,7 @@ extern meshtastic_DeviceState devicestate;
 extern meshtastic_ChannelFile channelFile;
 extern meshtastic_MyNodeInfo &myNodeInfo;
 extern meshtastic_LocalConfig config;
+extern meshtastic_DeviceUIConfig uiconfig;
 extern meshtastic_LocalModuleConfig moduleConfig;
 extern meshtastic_User &owner;
 extern meshtastic_Position localPosition;
@@ -144,7 +145,7 @@ class NodeDB
         return &meshNodes->at(x);
     }
 
-    meshtastic_NodeInfoLite *getMeshNode(NodeNum n);
+    virtual meshtastic_NodeInfoLite *getMeshNode(NodeNum n);
     size_t getNumMeshNodes() { return numMeshNodes; }
 
     // returns true if the maximum number of nodes is reached or we are running low on memory
@@ -164,6 +165,8 @@ class NodeDB
                   position.time, position.timestamp);
         localPosition = position;
     }
+
+    bool hasValidPosition(const meshtastic_NodeInfoLite *n);
 
   private:
     uint32_t lastNodeDbSave = 0; // when we last saved our db to flash
@@ -216,13 +219,6 @@ extern NodeDB *nodeDB;
 
         prefs.is_power_saving = True
 */
-
-/// Sometimes we will have Position objects that only have a time, so check for
-/// valid lat/lon
-static inline bool hasValidPosition(const meshtastic_NodeInfoLite *n)
-{
-    return n->has_position && (n->position.latitude_i != 0 || n->position.longitude_i != 0);
-}
 
 /** The current change # for radio settings.  Starts at 0 on boot and any time the radio settings
  * might have changed is incremented.  Allows others to detect they might now be on a new channel.

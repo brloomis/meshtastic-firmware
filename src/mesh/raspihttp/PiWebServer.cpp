@@ -82,8 +82,6 @@ char contentTypes[][2][32] = {{".txt", "text/plain"},      {".html", "text/html"
 volatile bool isWebServerReady;
 volatile bool isCertReady;
 
-HttpAPI webAPI;
-
 PiWebServerThread *piwebServerThread;
 
 /**
@@ -232,9 +230,9 @@ int handleAPIv1ToRadio(const struct _u_request *req, struct _u_response *res, vo
     ulfius_add_header_to_response(res, "X-Protobuf-Schema",
                                   "https://raw.githubusercontent.com/meshtastic/protobufs/master/meshtastic/mesh.proto");
 
-    if (req->http_verb == "OPTIONS") {
+    if (strcmp(req->http_verb, "OPTIONS") == 0) {
         ulfius_set_response_properties(res, U_OPT_STATUS, 204);
-        return U_CALLBACK_CONTINUE;
+        return U_CALLBACK_COMPLETE;
     }
 
     byte buffer[MAX_TO_FROM_RADIO_SIZE];
@@ -247,7 +245,7 @@ int handleAPIv1ToRadio(const struct _u_request *req, struct _u_response *res, vo
     portduinoVFS->mountpoint(configWeb.rootPath);
 
     LOG_DEBUG("Received %d bytes from PUT request", s);
-    webAPI.handleToRadio(buffer, s);
+    static_cast<HttpAPI *>(user_data)->handleToRadio(buffer, s);
     LOG_DEBUG("end web->radio  ");
     return U_CALLBACK_COMPLETE;
 }
@@ -269,12 +267,17 @@ int handleAPIv1FromRadio(const struct _u_request *req, struct _u_response *res, 
     ulfius_add_header_to_response(res, "X-Protobuf-Schema",
                                   "https://raw.githubusercontent.com/meshtastic/protobufs/master/meshtastic/mesh.proto");
 
+    if (strcmp(req->http_verb, "OPTIONS") == 0) {
+        ulfius_set_response_properties(res, U_OPT_STATUS, 204);
+        return U_CALLBACK_COMPLETE;
+    }
+
     uint8_t txBuf[MAX_STREAM_BUF_SIZE];
     uint32_t len = 1;
 
     if (valueAll == "true") {
         while (len) {
-            len = webAPI.getFromRadio(txBuf);
+            len = static_cast<HttpAPI *>(user_data)->getFromRadio(txBuf);
             ulfius_set_response_properties(res, U_OPT_STATUS, 200, U_OPT_BINARY_BODY, txBuf, len);
             const char *tmpa = (const char *)txBuf;
             ulfius_set_string_body_response(res, 200, tmpa);
@@ -284,7 +287,7 @@ int handleAPIv1FromRadio(const struct _u_request *req, struct _u_response *res, 
         }
         // Otherwise, just return one protobuf
     } else {
-        len = webAPI.getFromRadio(txBuf);
+        len = static_cast<HttpAPI *>(user_data)->getFromRadio(txBuf);
         const char *tmpa = (const char *)txBuf;
         ulfius_set_binary_body_response(res, 200, tmpa, len);
         // LOG_DEBUG("\n----webAPI response:");
@@ -492,8 +495,10 @@ PiWebServerThread::PiWebServerThread()
         u_map_put(instanceWeb.default_headers, "Access-Control-Allow-Origin", "*");
         // Maximum body size sent by the client is 1 Kb
         instanceWeb.max_post_body_size = 1024;
-        ulfius_add_endpoint_by_val(&instanceWeb, "GET", PREFIX, "/api/v1/fromradio/*", 1, &handleAPIv1FromRadio, NULL);
-        ulfius_add_endpoint_by_val(&instanceWeb, "PUT", PREFIX, "/api/v1/toradio/*", 1, &handleAPIv1ToRadio, configWeb.rootPath);
+        ulfius_add_endpoint_by_val(&instanceWeb, "GET", PREFIX, "/api/v1/fromradio/*", 1, &handleAPIv1FromRadio, &webAPI);
+        ulfius_add_endpoint_by_val(&instanceWeb, "OPTIONS", PREFIX, "/api/v1/fromradio/*", 1, &handleAPIv1FromRadio, &webAPI);
+        ulfius_add_endpoint_by_val(&instanceWeb, "PUT", PREFIX, "/api/v1/toradio/*", 1, &handleAPIv1ToRadio, &webAPI);
+        ulfius_add_endpoint_by_val(&instanceWeb, "OPTIONS", PREFIX, "/api/v1/toradio/*", 1, &handleAPIv1ToRadio, &webAPI);
 
         // Add callback function to all endpoints for the Web Server
         ulfius_add_endpoint_by_val(&instanceWeb, "GET", NULL, "/*", 2, &callback_static_file, &configWeb);
@@ -518,10 +523,9 @@ PiWebServerThread::~PiWebServerThread()
     u_map_clean(&configWeb.mime_types);
 
     ulfius_stop_framework(&instanceWeb);
-    ulfius_stop_framework(&instanceWeb);
+    ulfius_clean_instance(&instanceWeb);
     free(configWeb.rootPath);
-    ulfius_clean_instance(&instanceService);
-    ulfius_clean_instance(&instanceService);
+    free(key_pem);
     free(cert_pem);
     LOG_INFO("End framework");
 }
