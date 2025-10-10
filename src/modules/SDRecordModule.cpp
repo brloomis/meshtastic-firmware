@@ -420,7 +420,7 @@ void SDRecordModule::drawFrame(OLEDDisplay *display, OLEDDisplayUiState *state, 
 
         display->drawString(x, y + (FONT_HEIGHT_SMALL * 2), fileprefix + m_fileName);
         snprintf(points, sizeof(points), "%lu pts", m_pointsRecorded);
-        display->drawString(x + header_offset, y, points);
+        display->drawString(x + header_offset, y + (FONT_HEIGHT_SMALL * 1), points);
 
     } else {
         if (!m_wantRecord) {
