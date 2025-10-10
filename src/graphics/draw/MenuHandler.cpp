@@ -23,7 +23,6 @@
 
 #if defined(RECORD_GPS)
 #include "modules/SDRecordModule.h"
-extern SDRecordModule *sdRecordModule;
 #endif
 
 extern uint16_t TFT_MESH;

@@ -67,7 +67,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #if defined(RECORD_GPS)
 #include "modules/SDRecordModule.h"
-extern SDRecordModule *sdRecordModule;
 #endif
 
 
@@ -1094,10 +1093,12 @@ void Screen::setFrames(FrameFocus focus)
                 fsi.positions.focusedModule = numframes;
             if (m && m == waypointModule)
                 fsi.positions.waypoint = numframes;
+#if defined(RECORD_GPS)
             if (m && m == sdRecordModule)
             {
                 fsi.positions.gpslog = numframes;
             }
+#endif
 
             indicatorIcons.push_back(icon_module);
             numframes++;
