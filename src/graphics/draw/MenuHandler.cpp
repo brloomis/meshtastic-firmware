@@ -21,6 +21,11 @@
 #include "modules/TraceRouteModule.h"
 #include <functional>
 
+#if defined(RECORD_GPS)
+#include "modules/SDRecordModule.h"
+extern SDRecordModule *sdRecordModule;
+#endif
+
 extern uint16_t TFT_MESH;
 
 namespace graphics
@@ -1418,6 +1423,28 @@ void menuHandler::keyVerificationFinalPrompt()
     }
 }
 
+void menuHandler::gpsLogMenu()
+{
+    enum optionsNumbers { Back, Rec_toggle };
+
+    static const char *optionsArray[] = {"Back", "Record Toggle"};
+    BannerOverlayOptions bannerOptions;
+    bannerOptions.message = "GPS Record Menu";
+    bannerOptions.optionsArrayPtr = optionsArray;
+    bannerOptions.optionsCount = 2;
+    bannerOptions.bannerCallback = [](int selected) -> void {
+        if (selected == Rec_toggle) {
+#if defined(RECORD_GPS)
+                if (sdRecordModule) {
+                    sdRecordModule->toggleRec();
+                }
+#endif
+        }
+    };
+    screen->showOverlayBanner(bannerOptions);
+}
+
+
 void menuHandler::FrameToggles_menu()
 {
     enum optionsNumbers {
@@ -1635,6 +1662,9 @@ void menuHandler::handleMenuSwitch(OLEDDisplay *display)
         break;
     case power_menu:
         powerMenu();
+        break;
+    case gps_log_menu:
+        gpsLogMenu();
         break;
     case FrameToggles:
         FrameToggles_menu();

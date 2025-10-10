@@ -107,6 +107,11 @@
 #include "modules/DropzoneModule.h"
 #endif
 
+#if defined(HAS_SDCARD) && defined(RECORD_GPS)
+#include "modules/SDRecordModule.h"
+#endif
+
+
 /**
  * Create module instances here.  If you are adding a new module, you must 'new' it here (or somewhere else)
  */
@@ -298,6 +303,10 @@ void setupModules()
     if (moduleConfig.has_range_test && moduleConfig.range_test.enabled)
         new RangeTestModule();
 #endif
+#if defined(HAS_SDCARD) && defined(RECORD_GPS)
+    sdRecordModule = new SDRecordModule();
+#endif
+
     // NOTE! This module must be added LAST because it likes to check for replies from other modules and avoid sending extra
     // acks
     routingModule = new RoutingModule();

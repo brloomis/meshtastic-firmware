@@ -43,6 +43,7 @@ class menuHandler
         key_verification_final_prompt,
         trace_route_menu,
         throttle_message,
+        gps_log_menu,
         FrameToggles
     };
     static screenMenus menuQueue;
@@ -87,6 +88,7 @@ class menuHandler
     static void powerMenu();
     static void FrameToggles_menu();
     static void textMessageMenu();
+    static void gpsLogMenu();
 
   private:
     static void saveUIConfig();

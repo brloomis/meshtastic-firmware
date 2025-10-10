@@ -667,6 +667,7 @@ class Screen : public concurrency::OSThread
             uint8_t firstFavorite = 255;
             uint8_t lastFavorite = 255;
             uint8_t lora = 255;
+            uint8_t gpslog = 255;
         } positions;
 
         uint8_t frameCount = 0;

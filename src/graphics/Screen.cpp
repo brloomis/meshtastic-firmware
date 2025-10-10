@@ -65,6 +65,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "sleep.h"
 #include "target_specific.h"
 
+#if defined(RECORD_GPS)
+#include "modules/SDRecordModule.h"
+extern SDRecordModule *sdRecordModule;
+#endif
+
+
 using graphics::Emote;
 using graphics::emotes;
 using graphics::numEmotes;
@@ -1088,6 +1094,10 @@ void Screen::setFrames(FrameFocus focus)
                 fsi.positions.focusedModule = numframes;
             if (m && m == waypointModule)
                 fsi.positions.waypoint = numframes;
+            if (m && m == sdRecordModule)
+            {
+                fsi.positions.gpslog = numframes;
+            }
 
             indicatorIcons.push_back(icon_module);
             numframes++;
@@ -1629,6 +1639,8 @@ int Screen::handleInputEvent(const InputEvent *event)
                     menuHandler::nodeListMenu();
                 } else if (this->ui->getUiState()->currentFrame == framesetInfo.positions.wifi) {
                     menuHandler::wifiBaseMenu();
+                } else if (this->ui->getUiState()->currentFrame == framesetInfo.positions.gpslog) {
+                    menuHandler::gpsLogMenu();
                 }
             } else if (event->inputEvent == INPUT_BROKER_BACK) {
                 showPrevFrame();
