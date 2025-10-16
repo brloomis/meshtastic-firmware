@@ -44,6 +44,7 @@ class menuHandler
         trace_route_menu,
         throttle_message,
         gps_log_menu,
+        node_name_length_menu,
         FrameToggles
     };
     static screenMenus menuQueue;
@@ -86,6 +87,7 @@ class menuHandler
     static void notificationsMenu();
     static void screenOptionsMenu();
     static void powerMenu();
+    static void nodeNameLengthMenu();
     static void FrameToggles_menu();
     static void textMessageMenu();
     static void gpsLogMenu();
