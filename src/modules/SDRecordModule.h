@@ -33,7 +33,7 @@ class SDRecordModule : private concurrency::OSThread, public MeshModule
     void toggleRec();
     void shutdown();
 
-    int32_t tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats);
+    int32_t tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats, uint32_t dop);
 
 #if HAS_SCREEN
 
@@ -51,7 +51,7 @@ class SDRecordModule : private concurrency::OSThread, public MeshModule
     bool openTrackFileByTime(time_t curtime);
     bool openTrackFileByPrefix(const String prefix);
     String genFileName(const String prefix, uint8_t num, const String suffix);
-    int32_t writePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats, time_t timestamp);
+    int32_t writePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats, uint32_t dop, time_t timestamp);
 
     File m_fp;
     bool m_fp_open;

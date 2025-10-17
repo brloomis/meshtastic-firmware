@@ -194,7 +194,7 @@ int32_t SDRecordModule::runOnce()
     }
 }
 
-int32_t SDRecordModule::tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats)
+int32_t SDRecordModule::tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats, uint32_t dop)
 {
 
     // LOG_DEBUG("SDRecord- ****** %s\n", __FUNCTION__);
@@ -227,7 +227,7 @@ int32_t SDRecordModule::tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt,
                 */
             }
 
-            return this->writePos(myLat, myLon, myAlt, numSats, static_cast<time_t>(rtc_time));
+            return this->writePos(myLat, myLon, myAlt, numSats, dop, static_cast<time_t>(rtc_time));
 
         } else {
             if (m_lastTime == rtc_time) {
@@ -245,7 +245,7 @@ int32_t SDRecordModule::tryWritePos(int32_t myLat, int32_t myLon, int32_t myAlt,
     return 0;
 }
 
-int32_t SDRecordModule::writePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats, time_t timestamp)
+int32_t SDRecordModule::writePos(int32_t myLat, int32_t myLon, int32_t myAlt, uint32_t numSats, uint32_t dop, time_t timestamp)
 {
     if (m_fp_open) {
         struct tm *t = gmtime(&timestamp);
@@ -271,6 +271,13 @@ int32_t SDRecordModule::writePos(int32_t myLat, int32_t myLon, int32_t myAlt, ui
         memset(buf, 0x0, sizeof(buf));
 
         strftime(buf, sizeof(buf), "    <time>%Y-%m-%dT%H:%M:%SZ</time>\n", t);
+        m_fp.write(reinterpret_cast<uint8_t *>(buf), strlen(buf));
+        memset(buf, 0x0, sizeof(buf));
+
+        snprintf(buf, sizeof(buf), "    <sat>%u</sat>\n", numSats);
+        m_fp.write(reinterpret_cast<uint8_t *>(buf), strlen(buf));
+        memset(buf, 0x0, sizeof(buf));
+        snprintf(buf, sizeof(buf), "    <pdop>%.2f</pdop>\n", dop * 1e-2);
         m_fp.write(reinterpret_cast<uint8_t *>(buf), strlen(buf));
         memset(buf, 0x0, sizeof(buf));
 
@@ -373,13 +380,14 @@ int SDRecordModule::handleStatusUpdate(const meshtastic::GPSStatus *newStatus)
                 int32_t myLon = newStatus->getLongitude();
                 int32_t myAlt = newStatus->getAltitude();
                 uint32_t numSats = newStatus->getNumSatellites();
+                uint32_t dop = newStatus->getDOP();
 
                 /*
                     LOG_DEBUG("SDRecord *** update, fp is open,  got lat: %d, lon: %d, alt: %d, numsats: %u\n", myLat, myLon,
                     myAlt, numSats);
                 */
                 // write pos here
-                int32_t writeret = this->tryWritePos(myLat, myLon, myAlt, numSats);
+                int32_t writeret = this->tryWritePos(myLat, myLon, myAlt, numSats, dop);
                 if (0 != writeret) {
                     LOG_ERROR("SDRecord- tryWritePos ret %d\n", writeret);
                 }
